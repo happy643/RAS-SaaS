@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -6,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>PD自主RAS訓練測試版</title>
 
-  <!-- Firebase SDK：使用非模組方式 -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js"></script>
 
@@ -49,7 +48,7 @@
 <button id="startBtn">開始測試</button>
 
 <div id="instructions"></div>
-<audio id="musicPlayer" controls style="display:none; margin-top:20px;"></audio>
+<audio id="musicPlayer" controls style="display:none; margin-top:20px;" preload="auto" playsinline></audio>
 
 <div class="question-block" id="feedbackForm">
   <h2>請簡單回饋</h2>
@@ -79,28 +78,26 @@
 </div>
 
 <script>
-  // 初始化 Firebase
+  // ✅ Firebase 初始化
   const firebaseConfig = {
     apiKey: "AIzaSyDhUfnjxE-KFdY33DGMvKV6w8P7EpTkR4E",
     authDomain: "pd-ras-training.firebaseapp.com",
     projectId: "pd-ras-training",
-    storageBucket: "pd-ras-training.firebasestorage.app",
+    storageBucket: "pd-ras-training.appspot.com",
     messagingSenderId: "167154212913",
-    appId: "1:167154212913:web:762789c19c35958904f510",
-    measurementId: "G-8CLTGRD027"
+    appId: "1:167154212913:web:762789c19c35958904f510"
   };
-
   const app = firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore(app);
 
-  // 匿名用戶 ID 儲存（localStorage）
+  // 匿名 userId
   const userId = localStorage.getItem("userId") || crypto.randomUUID();
   localStorage.setItem("userId", userId);
 
   // 音樂與流程控制
   let stage = 0;
-  const lowFreqMusic = './III.100bpm_Taiyaki.mp3';
-  const highFreqMusic = './clapping-music-for-typographic-video-version-2-112975.mp3';
+  const lowFreqMusic = './III.100bpm_Taiyaki.mp3'; // 請確認檔案已上傳
+  const highFreqMusic = './clapping-music-for-typographic-video-version-2-112975.mp3'; // 同上
 
   const startBtn = document.getElementById('startBtn');
   const instructions = document.getElementById('instructions');
@@ -118,10 +115,10 @@
       instructions.innerText = '請戴上耳機，播放低頻音樂，並跟著節奏行走約1-2分鐘';
       musicPlayer.src = lowFreqMusic;
       musicPlayer.style.display = 'block';
-      musicPlayer.play();
+      musicPlayer.play().catch(err => console.error("播放失敗：", err));
       setTimeout(() => {
         feedbackForm.style.display = 'flex';
-      }, 10000); // 範例設10秒
+      }, 10000); // 示範用，實際建議 60000+
     }
   }
 
@@ -148,7 +145,7 @@
       stage = 1;
       instructions.innerText = '請戴上耳機，播放非低頻音樂，並跟著節奏行走約1-2分鐘';
       musicPlayer.src = highFreqMusic;
-      musicPlayer.play();
+      musicPlayer.play().catch(err => console.error("播放失敗：", err));
       setTimeout(() => {
         feedbackForm.style.display = 'flex';
       }, 10000);

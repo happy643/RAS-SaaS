@@ -1,14 +1,13 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>PD自主RAS訓練測試版</title>
-
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js"></script>
-
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -48,7 +47,7 @@
 <button id="startBtn">開始測試</button>
 
 <div id="instructions"></div>
-<audio id="musicPlayer" controls style="display:none; margin-top:20px;" preload="auto" playsinline></audio>
+<audio id="musicPlayer" controls muted style="display:none; margin-top:20px;" preload="auto" playsinline></audio>
 
 <div class="question-block" id="feedbackForm">
   <h2>請簡單回饋</h2>
@@ -90,14 +89,14 @@
   const app = firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore(app);
 
-  // 匿名 userId
+  // 匿名 userId 儲存
   const userId = localStorage.getItem("userId") || crypto.randomUUID();
   localStorage.setItem("userId", userId);
 
-  // 音樂與流程控制
+  // 音樂控制變數
   let stage = 0;
-  const lowFreqMusic = './drum.mp3'; // 請確認檔案已上傳
-  const highFreqMusic = './high.mp3'; // 同上
+  const lowFreqMusic = './drum.mp3'; // ✅ 改為你的 drum.mp3
+  const highFreqMusic = './high.mp3'; // 第二首音樂檔
 
   const startBtn = document.getElementById('startBtn');
   const instructions = document.getElementById('instructions');
@@ -114,11 +113,12 @@
     if (stage === 0) {
       instructions.innerText = '請戴上耳機，播放低頻音樂，並跟著節奏行走約1-2分鐘';
       musicPlayer.src = lowFreqMusic;
+      musicPlayer.muted = false; // 解開靜音限制
       musicPlayer.style.display = 'block';
       musicPlayer.play().catch(err => console.error("播放失敗：", err));
       setTimeout(() => {
         feedbackForm.style.display = 'flex';
-      }, 10000); // 示範用，實際建議 60000+
+      }, 10000); // 示範用為 10 秒
     }
   }
 
@@ -145,6 +145,7 @@
       stage = 1;
       instructions.innerText = '請戴上耳機，播放非低頻音樂，並跟著節奏行走約1-2分鐘';
       musicPlayer.src = highFreqMusic;
+      musicPlayer.muted = false;
       musicPlayer.play().catch(err => console.error("播放失敗：", err));
       setTimeout(() => {
         feedbackForm.style.display = 'flex';

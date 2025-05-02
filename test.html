@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>測試音樂播放</title>
+</head>
+<body>
+  <h1>測試 drum.mp3 播放</h1>
+  <button id="playBtn">點我播放</button>
+  <audio id="player" src="./drum.mp3" controls muted style="margin-top: 20px;"></audio>
+
+  <script>
+    const btn = document.getElementById('playBtn');
+    const player = document.getElementById('player');
+
+    btn.addEventListener('click', () => {
+      player.muted = false;
+      player.play().then(() => {
+        console.log("播放成功！");
+      }).catch(err => {
+        console.error("播放失敗：", err);
+      });
+    });
+  </script>
+</body>
+</html>

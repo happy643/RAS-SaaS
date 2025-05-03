@@ -3,142 +3,157 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>PD自主RAS訓練測試版</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #e3f2fd;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
+      background-color: #e0f7fa;
+      text-align: center;
+      padding: 30px;
     }
     h1 {
       color: #1565c0;
     }
     button {
-      margin-top: 20px;
-      padding: 15px 30px;
       font-size: 18px;
-      border: none;
+      padding: 15px 30px;
       background-color: #0288d1;
       color: white;
-      border-radius: 10px;
+      border: none;
+      border-radius: 12px;
       cursor: pointer;
-    }
-    .question-block {
-      display: none;
-      flex-direction: column;
       margin-top: 20px;
     }
-    .question {
-      margin: 10px 0;
-    }
-    .hidden {
+    #feedbackForm {
+      margin-top: 20px;
+      text-align: left;
       display: none;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .question {
+      margin-bottom: 20px;
+    }
+    label {
+      margin-right: 15px;
+    }
+    #thankYou {
+      font-size: 22px;
+      color: green;
+      margin-top: 30px;
+      display: none;
+    }
+    audio {
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
   <h1>PD自主RAS訓練測試版</h1>
+
   <button id="startBtn">開始測試</button>
 
-  <div id="playerSection" class="hidden">
-    <audio id="musicPlayer" controls></audio>
+  <audio id="musicPlayer" controls style="display: none;"></audio>
 
-    <form id="feedbackForm" class="question-block">
-      <div class="question">
-        <label>1. 你覺得這段音樂是否讓你覺得「輕鬆」？</label><br />
-        <label><input type="radio" name="relaxing" value="是" required> 是</label>
-        <label><input type="radio" name="relaxing" value="否"> 否</label>
-      </div>
-      <div class="question">
-        <label>2. 你覺得「是否容易跟上節奏」？</label><br />
-        <label><input type="radio" name="followable" value="容易" required> 容易</label>
-        <label><input type="radio" name="followable" value="困難"> 困難</label>
-      </div>
-      <button type="submit">提交回饋</button>
-    </form>
-  </div>
+  <form id="feedbackForm">
+    <div class="question">
+      <p>1. 你覺得這段音樂是否讓你覺得「輕鬆」？</p>
+      <label><input type="radio" name="q1" value="yes"> 是</label>
+      <label><input type="radio" name="q1" value="no"> 否</label>
+    </div>
+    <div class="question">
+      <p>2. 你覺得「是否容易跟上節奏」？</p>
+      <label><input type="radio" name="q2" value="easy"> 容易</label>
+      <label><input type="radio" name="q2" value="difficult"> 困難</label>
+    </div>
+    <button type="button" onclick="handleFeedbackSubmit()">提交回饋</button>
+  </form>
+
+  <div id="thankYou">感謝您的回饋，測試完成！</div>
 
   <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 
   <script>
-    // Firebase 設定
     const firebaseConfig = {
-      apiKey: "你的API金鑰",
-      authDomain: "你的專案ID.firebaseapp.com",
-      projectId: "你的專案ID",
-      storageBucket: "你的專案ID.appspot.com",
-      messagingSenderId: "訊息ID",
-      appId: "你的AppID"
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_MESSAGING_ID",
+      appId: "YOUR_APP_ID"
     };
 
-    const app = firebase.initializeApp(firebaseConfig);
+    firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // ✅ 匿名登入
-    firebase.auth().signInAnonymously()
-      .then(() => console.log("✅ 匿名登入成功"))
-      .catch((error) => console.error("❌ 匿名登入失敗", error));
+    let userId = localStorage.getItem("userId");
+    if (!userId) {
+      userId = crypto.randomUUID();
+      localStorage.setItem("userId", userId);
+    }
 
-    const musicList = ["high.mp3", "drum.mp3"];
-    let currentTrack = 0;
-    let userId = localStorage.getItem("userId") || crypto.randomUUID();
-    localStorage.setItem("userId", userId);
+    firebase.auth().signInAnonymously().catch(console.error);
 
+    let stage = 0;
+    const musicList = ["./drum.mp3", "./high.mp3"];
     const startBtn = document.getElementById("startBtn");
     const musicPlayer = document.getElementById("musicPlayer");
-    const playerSection = document.getElementById("playerSection");
     const feedbackForm = document.getElementById("feedbackForm");
+    const thankYou = document.getElementById("thankYou");
 
     startBtn.addEventListener("click", () => {
       startBtn.style.display = "none";
-      playerSection.classList.remove("hidden");
-      playTrack(currentTrack);
+      playNextMusic();
     });
 
-    function playTrack(index) {
-      if (index >= musicList.length) {
-        playerSection.innerHTML = "<h2>測試完成，感謝您的參與！</h2>";
-        return;
-      }
-      feedbackForm.reset();
-      feedbackForm.style.display = "none";
-      musicPlayer.src = musicList[index];
+    musicPlayer.addEventListener("ended", () => {
+      feedbackForm.style.display = "block";
+    });
+
+    function playNextMusic() {
+      musicPlayer.src = musicList[stage];
+      musicPlayer.style.display = "block";
       musicPlayer.play();
     }
 
-    musicPlayer.addEventListener("ended", () => {
-      feedbackForm.style.display = "flex";
-    });
+    async function handleFeedbackSubmit() {
+      const q1 = document.querySelector('input[name="q1"]:checked')?.value;
+      const q2 = document.querySelector('input[name="q2"]:checked')?.value;
 
-    feedbackForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const relaxing = feedbackForm.elements["relaxing"].value;
-      const followable = feedbackForm.elements["followable"].value;
+      if (!q1 || !q2) {
+        alert("請完整填寫問卷後再提交");
+        return;
+      }
 
+      feedbackForm.style.display = "none";
+      musicPlayer.style.display = "none";
+
+      // 儲存至 Firebase
       try {
-        await db.collection("rasFeedback").add({
+        await db.collection("feedbacks").add({
           userId,
-          track: musicList[currentTrack],
-          relaxing,
-          followable,
+          music: musicList[stage],
+          q1,
+          q2,
           timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
-        currentTrack++;
-        playTrack(currentTrack);
-      } catch (error) {
-        alert("❌ 提交失敗：" + error.message);
-        console.error(error);
+        console.log("回饋已儲存");
+      } catch (err) {
+        console.error("儲存失敗:", err);
       }
-    });
+
+      stage++;
+      if (stage < musicList.length) {
+        playNextMusic();
+      } else {
+        thankYou.style.display = "block";
+      }
+    }
   </script>
 </body>
 </html>

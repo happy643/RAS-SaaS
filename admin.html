@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PD RAS 回饋管理後台</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f0f4f8;
+    }
+    h1 {
+      color: #0077b6;
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #caf0f8;
+    }
+  </style>
+</head>
+<body>
+
+<h1>PD RAS 回饋管理後台</h1>
+<table id="feedbackTable">
+  <thead>
+    <tr>
+      <th>使用者 ID</th>
+      <th>階段</th>
+      <th>輕鬆程度</th>
+      <th>節奏同步</th>
+      <th>時間</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDhUfnjxE-KFdY33DGMvKV6w8P7EpTkR4E",
+    authDomain: "pd-ras-training.firebaseapp.com",
+    projectId: "pd-ras-training",
+    storageBucket: "pd-ras-training.appspot.com",
+    messagingSenderId: "167154212913",
+    appId: "1:167154212913:web:762789c19c35958904f510"
+  };
+  const app = firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore(app);
+
+  const tbody = document.querySelector("#feedbackTable tbody");
+
+  db.collection("feedback").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
+    tbody.innerHTML = "";
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${data.userId}</td>
+        <td>${data.stage}</td>
+        <td>${data.ease}</td>
+        <td>${data.sync}</td>
+        <td>${data.timestamp.toDate().toLocaleString()}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  });
+</script>
+
+</body>
+</html>

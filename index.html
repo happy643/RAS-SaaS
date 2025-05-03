@@ -2,8 +2,8 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>PD自主RAS訓練測試版</title>
   <style>
     body {
@@ -33,9 +33,15 @@
       display: none;
       margin-top: 20px;
     }
+    .question-block {
+      margin: 10px 0;
+    }
+    label {
+      margin-right: 15px;
+    }
   </style>
 
-  <!-- ✅ Firebase CDN (compat 版本) -->
+  <!-- Firebase CDN -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 </head>
@@ -45,23 +51,27 @@
   <button id="startBtn">開始測試</button>
 
   <div id="instructions"></div>
-
-  <!-- 播放器 -->
   <audio id="musicPlayer" controls style="margin-top: 20px;"></audio>
 
-  <!-- 簡單問卷 -->
   <div id="feedbackForm">
-    <p>請問這段音樂讓你覺得：</p>
-    <button onclick="submitFeedback('easy')">輕鬆</button>
-    <button onclick="submitFeedback('difficult')">困難</button>
+    <div class="question-block">
+      <p>1. 你覺得這段音樂是否讓你覺得「輕鬆」？</p>
+      <label><input type="radio" name="q1" value="yes"> 是</label>
+      <label><input type="radio" name="q1" value="no"> 否</label>
+    </div>
+    <div class="question-block">
+      <p>2. 你覺得「是否容易跟上節奏」？</p>
+      <label><input type="radio" name="q2" value="yes"> 容易</label>
+      <label><input type="radio" name="q2" value="no"> 困難</label>
+    </div>
+    <button onclick="submitFeedback()">提交回饋</button>
   </div>
 
   <div id="thankYou">
-    <p>感謝您的回饋！</p>
+    <p>✅ 感謝您的參與與回饋！</p>
   </div>
 
   <script>
-    // ✅ Firebase 設定
     const firebaseConfig = {
       apiKey: "AIzaSyC7m4kUocqpqZzEwcPjqkxNnq7waoTo9zE",
       authDomain: "pd-ras-training.firebaseapp.com",
@@ -70,60 +80,65 @@
       messagingSenderId: "167154212913",
       appId: "1:167154212913:web:762789c19c35958094f510"
     };
-
     const app = firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore(app);
 
-    // ✅ 匿名 userId 儲存
     const userId = localStorage.getItem("userId") || crypto.randomUUID();
     localStorage.setItem("userId", userId);
 
-    // ✅ 音樂與流程控制
     let stage = 0;
-    const lowFreqMusic = './drum.mp3';
-    const highFreqMusic = './high.mp3';
+    const musicList = ["./drum.mp3", "./high.mp3"];
+    const musicPlayer = document.getElementById("musicPlayer");
+    const instructions = document.getElementById("instructions");
+    const feedbackForm = document.getElementById("feedbackForm");
+    const thankYou = document.getElementById("thankYou");
+    const startBtn = document.getElementById("startBtn");
 
-    const startBtn = document.getElementById('startBtn');
-    const instructions = document.getElementById('instructions');
-    const musicPlayer = document.getElementById('musicPlayer');
-    const feedbackForm = document.getElementById('feedbackForm');
-    const thankYou = document.getElementById('thankYou');
-
-    startBtn.addEventListener('click', () => {
-      startBtn.style.display = 'none';
-      startTraining();
+    startBtn.addEventListener("click", () => {
+      startBtn.style.display = "none";
+      playMusic(stage);
     });
 
-    function startTraining() {
-      if (stage === 0) {
-        instructions.innerText = '請戴上耳機，播放低頻音樂，並跟著節奏走約1-2分鐘';
-        instructions.style.display = 'block';
-        musicPlayer.src = lowFreqMusic;
-        musicPlayer.play();
-        stage = 1;
+    function playMusic(index) {
+      instructions.innerText = `🎵 播放第 ${index + 1} 段音樂，請戴上耳機並走動`;
+      instructions.style.display = "block";
+      feedbackForm.style.display = "none";
+      thankYou.style.display = "none";
 
-        musicPlayer.onended = () => {
-          instructions.innerText = '接下來播放第二段音樂，請繼續走動';
-          musicPlayer.src = highFreqMusic;
-          musicPlayer.play();
-          stage = 2;
-        };
-      } else if (stage === 2) {
-        musicPlayer.onended = () => {
-          instructions.style.display = 'none';
-          feedbackForm.style.display = 'block';
-        };
-      }
+      musicPlayer.src = musicList[index];
+      musicPlayer.play();
+
+      musicPlayer.onended = () => {
+        instructions.style.display = "none";
+        feedbackForm.style.display = "block";
+      };
     }
 
-    function submitFeedback(feeling) {
+    function submitFeedback() {
+      const q1 = document.querySelector('input[name="q1"]:checked');
+      const q2 = document.querySelector('input[name="q2"]:checked');
+      if (!q1 || !q2) {
+        alert("請回答所有問題再提交！");
+        return;
+      }
+
       db.collection("rasFeedback").add({
         userId: userId,
-        feeling: feeling,
+        stage: stage,
+        isRelaxing: q1.value,
+        isEasyToFollow: q2.value,
         timestamp: new Date()
       }).then(() => {
-        feedbackForm.style.display = 'none';
-        thankYou.style.display = 'block';
+        stage++;
+        document.querySelector('input[name="q1"]:checked').checked = false;
+        document.querySelector('input[name="q2"]:checked').checked = false;
+
+        if (stage < musicList.length) {
+          playMusic(stage);
+        } else {
+          feedbackForm.style.display = "none";
+          thankYou.style.display = "block";
+        }
       });
     }
   </script>

@@ -1,11 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PD自主RAS訓練測試版</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -17,7 +16,9 @@
       height: 100vh;
       margin: 0;
     }
-    h1 { color: #0077b6; }
+    h1 {
+      color: #0077b6;
+    }
     button {
       margin: 20px;
       padding: 15px 30px;
@@ -28,141 +29,103 @@
       border-radius: 10px;
       cursor: pointer;
     }
-    .question-block {
-      margin-top: 20px;
+    #instructions, #feedbackForm, #thankYou {
       display: none;
-      flex-direction: column;
-      align-items: center;
+      margin-top: 20px;
     }
-    label { margin: 10px 0 5px; }
-    select { margin-bottom: 10px; padding: 5px; }
   </style>
-</head>
 
+  <!-- ✅ Firebase CDN (compat 版本) -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+</head>
 <body>
 
-<h1>PD自主RAS訓練測試版</h1>
-<button id="startBtn">開始測試</button>
+  <h1>PD自主RAS訓練測試版</h1>
+  <button id="startBtn">開始測試</button>
 
-<div id="instructions"></div>
-<audio id="musicPlayer" controls muted style="display:none; margin-top:20px;" preload="auto" playsinline></audio>
+  <div id="instructions"></div>
 
-<div class="question-block" id="feedbackForm">
-  <h2>請簡單回饋</h2>
-  <label>這段練習讓您走路感覺輕鬆嗎？</label>
-  <select id="ease">
-    <option>非常不同意</option>
-    <option>不同意</option>
-    <option>普通</option>
-    <option>同意</option>
-    <option>非常同意</option>
-  </select>
+  <!-- 播放器 -->
+  <audio id="musicPlayer" controls style="margin-top: 20px;"></audio>
 
-  <label>跟上音樂節奏容易嗎？</label>
-  <select id="sync">
-    <option>非常不同意</option>
-    <option>不同意</option>
-    <option>普通</option>
-    <option>同意</option>
-    <option>非常同意</option>
-  </select>
+  <!-- 簡單問卷 -->
+  <div id="feedbackForm">
+    <p>請問這段音樂讓你覺得：</p>
+    <button onclick="submitFeedback('easy')">輕鬆</button>
+    <button onclick="submitFeedback('difficult')">困難</button>
+  </div>
 
-  <button onclick="submitFeedback()">提交回饋並進行下一首</button>
-</div>
+  <div id="thankYou">
+    <p>感謝您的回饋！</p>
+  </div>
 
-<div id="thankYou" style="display:none; margin-top:20px; font-size:20px; color:#023e8a;">
-  感謝您的參與！
-</div>
+  <script>
+    // ✅ Firebase 設定
+    const firebaseConfig = {
+      apiKey: "AIzaSyC7m4kUocqpqZzEwcPjqkxNnq7waoTo9zE",
+      authDomain: "pd-ras-training.firebaseapp.com",
+      projectId: "pd-ras-training",
+      storageBucket: "pd-ras-training.appspot.com",
+      messagingSenderId: "167154212913",
+      appId: "1:167154212913:web:762789c19c35958094f510"
+    };
 
-<script>
-  // Firebase 設定
-  const firebaseConfig = {
-    apiKey: "AIzaSyDhUfnjxE-KFdY33DGMvKV6w8P7EpTkR4E",
-    authDomain: "pd-ras-training.firebaseapp.com",
-    projectId: "pd-ras-training",
-    storageBucket: "pd-ras-training.appspot.com",
-    messagingSenderId: "167154212913",
-    appId: "1:167154212913:web:762789c19c35958904f510"
-  };
-  const app = firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore(app);
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore(app);
 
-  // 匿名 ID 儲存
-  const userId = localStorage.getItem("userId") || crypto.randomUUID();
-  localStorage.setItem("userId", userId);
+    // ✅ 匿名 userId 儲存
+    const userId = localStorage.getItem("userId") || crypto.randomUUID();
+    localStorage.setItem("userId", userId);
 
-  // 音樂控制邏輯
-  let stage = 0;
-  const lowFreqMusic = './drum.mp3';
-  const highFreqMusic = './high.mp3';
+    // ✅ 音樂與流程控制
+    let stage = 0;
+    const lowFreqMusic = './drum.mp3';
+    const highFreqMusic = './high.mp3';
 
-  const startBtn = document.getElementById('startBtn');
-  const instructions = document.getElementById('instructions');
-  const musicPlayer = document.getElementById('musicPlayer');
-  const feedbackForm = document.getElementById('feedbackForm');
-  const thankYou = document.getElementById('thankYou');
+    const startBtn = document.getElementById('startBtn');
+    const instructions = document.getElementById('instructions');
+    const musicPlayer = document.getElementById('musicPlayer');
+    const feedbackForm = document.getElementById('feedbackForm');
+    const thankYou = document.getElementById('thankYou');
 
-  startBtn.addEventListener('click', () => {
-    startBtn.style.display = 'none';
-    startTraining();
-  });
+    startBtn.addEventListener('click', () => {
+      startBtn.style.display = 'none';
+      startTraining();
+    });
 
-  function playAudio(filePath) {
-    musicPlayer.src = filePath;
-    musicPlayer.load();
-    musicPlayer.muted = false;
-    musicPlayer.style.display = 'block';
+    function startTraining() {
+      if (stage === 0) {
+        instructions.innerText = '請戴上耳機，播放低頻音樂，並跟著節奏走約1-2分鐘';
+        instructions.style.display = 'block';
+        musicPlayer.src = lowFreqMusic;
+        musicPlayer.play();
+        stage = 1;
 
-    musicPlayer.play()
-      .then(() => console.log("播放成功：" + filePath))
-      .catch(err => console.error("播放失敗：", err));
-  }
-
-  function startTraining() {
-    if (stage === 0) {
-      instructions.innerText = '請戴上耳機，播放低頻音樂，並跟著節奏行走約1-2分鐘';
-      playAudio(lowFreqMusic);
-      setTimeout(() => {
-        feedbackForm.style.display = 'flex';
-      }, 10000);
+        musicPlayer.onended = () => {
+          instructions.innerText = '接下來播放第二段音樂，請繼續走動';
+          musicPlayer.src = highFreqMusic;
+          musicPlayer.play();
+          stage = 2;
+        };
+      } else if (stage === 2) {
+        musicPlayer.onended = () => {
+          instructions.style.display = 'none';
+          feedbackForm.style.display = 'block';
+        };
+      }
     }
-  }
 
-  async function submitFeedback() {
-    const ease = document.getElementById('ease').value;
-    const sync = document.getElementById('sync').value;
-    const timestamp = new Date();
-
-    try {
-      await db.collection("feedback").add({
+    function submitFeedback(feeling) {
+      db.collection("rasFeedback").add({
         userId: userId,
-        stage: stage,
-        ease: ease,
-        sync: sync,
-        timestamp: firebase.firestore.Timestamp.fromDate(timestamp)
+        feeling: feeling,
+        timestamp: new Date()
+      }).then(() => {
+        feedbackForm.style.display = 'none';
+        thankYou.style.display = 'block';
       });
-      console.log("回饋已送出");
-    } catch (e) {
-      console.error("儲存錯誤：", e);
     }
-
-    feedbackForm.style.display = 'none';
-
-    if (stage === 0) {
-      stage = 1;
-      instructions.innerText = '請戴上耳機，播放非低頻音樂，並跟著節奏行走約1-2分鐘';
-      playAudio(highFreqMusic);
-      setTimeout(() => {
-        feedbackForm.style.display = 'flex';
-      }, 10000);
-    } else {
-      musicPlayer.style.display = 'none';
-      instructions.style.display = 'none';
-      thankYou.style.display = 'block';
-    }
-  }
-</script>
-
+  </script>
 </body>
 </html>
-
